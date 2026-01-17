@@ -1,30 +1,34 @@
 import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 APP_URL = os.getenv("APP_URL")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def start(update: Update, context: CallbackContext):
     keyboard = [
         [
             InlineKeyboardButton(
                 "🚀 فتح الويب",
-                web_app=WebAppInfo(url=APP_URL)
+                web_app={"url": APP_URL}
             )
         ]
     ]
 
-    await update.message.reply_text(
+    update.message.reply_text(
         "👋 أهلاً بك!\nاضغط على الزر لفتح الويب 👇",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+
     print("✅ Bot is running...")
-    app.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
     main()
