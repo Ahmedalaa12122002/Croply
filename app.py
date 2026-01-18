@@ -1,6 +1,7 @@
-
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from sqlalchemy import text
+from database import engine
 
 app = FastAPI()
 
@@ -19,3 +20,9 @@ async def home():
     </body>
     </html>
     """
+
+@app.get("/db-test")
+async def db_test():
+    async with engine.connect() as conn:
+        result = await conn.execute(text("SELECT 1"))
+        return {"database": result.scalar()}
