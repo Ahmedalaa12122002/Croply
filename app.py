@@ -23,6 +23,6 @@ async def home():
 
 @app.get("/db-test")
 async def db_test():
-    async with engine.connect() as conn:
+    async with engine.begin() as conn:
         result = await conn.execute(text("SELECT 1"))
         return {"database": result.scalar()}
