@@ -1,6 +1,5 @@
 fastapi
 uvicorn
-python-telegram-bot==20.3
-
-sqlalchemy
+sqlalchemy>=2.0
 asyncpg
+python-telegram-bot==20.7
