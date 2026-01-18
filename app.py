@@ -1,21 +1,11 @@
+from database import engine
+from sqlalchemy import text
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-
-app = FastAPI()
-
-@app.get("/", response_class=HTMLResponse)
-async def home():
-    return """
-    <!DOCTYPE html>
-    <html lang="ar">
-    <head>
-        <meta charset="UTF-8">
-        <title>Telegram Web App</title>
-    </head>
-    <body style="text-align:center;font-family:Arial">
-        <h1>✅ الويب شغال بنجاح</h1>
-        <p>تم فتح التطبيق من داخل تلجرام 🚀</p>
-    </body>
-    </html>
-    """
+@app.get("/db-test")
+async def db_test():
+    try:
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            return {"status": "ok", "db": result.scalar()}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
