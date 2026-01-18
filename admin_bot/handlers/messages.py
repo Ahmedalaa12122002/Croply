@@ -1,65 +1,56 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from sqlalchemy import select
-
 from database import AsyncSessionLocal
 from models import User
-from handlers.callbacks import USER_STATES
-from handlers.permissions import get_user_role
+from handlers.permissions import is_admin_or_owner
 
 
 async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    التعامل مع الرسائل النصية داخل بوت الأدمن
-    (مثل إدخال ID المستخدم عند البحث)
-    """
+    # تأكيد إن الرسالة نص
+    if not update.message or not update.message.text:
+        return
 
-    telegram_user_id = update.effective_user.id
+    user_id = update.effective_user.id
     text = update.message.text.strip()
 
-    # 🔐 تحقق من الصلاحيات
-    role = await get_user_role(telegram_user_id)
-    if not role:
-        await update.message.reply_text("⛔ غير مصرح لك باستخدام هذا البوت")
+    # تحقق صلاحيات
+    if not await is_admin_or_owner(user_id):
         return
 
-    # 🕒 هل المستخدم في وضع انتظار إدخال ID؟
-    if USER_STATES.get(telegram_user_id) != "WAITING_ID":
-        # تجاهل أي رسالة عشوائية
-        return
+    # تحقق من الحالة
+    state = context.user_data.get("state")
 
-    # ✅ التحقق من صحة الـ ID
+    if state != "WAITING_USER_ID":
+        return  # تجاهل أي رسالة خارج السياق
+
+    # تحقق من صحة الـ ID
     if not text.isdigit():
-        await update.message.reply_text("❌ من فضلك ابعت Telegram ID صحيح (أرقام فقط)")
+        await update.message.reply_text("❌ من فضلك أرسل ID رقمي صحيح")
         return
 
-    target_user_id = int(text)
+    target_id = int(text)
 
-    # 🔍 البحث في قاعدة البيانات
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(User).where(User.telegram_id == target_user_id)
+            select(User).where(User.telegram_id == target_id)
         )
         user = result.scalar_one_or_none()
 
-    # 🧹 إزالة حالة الانتظار
-    USER_STATES.pop(telegram_user_id, None)
+    # مسح الحالة بعد الاستخدام
+    context.user_data.pop("state", None)
 
-    # ❌ المستخدم غير موجود
     if not user:
         await update.message.reply_text("❌ المستخدم غير موجود في قاعدة البيانات")
         return
 
-    # ✅ عرض بيانات المستخدم
-    message = (
-        "👤 **بيانات المستخدم**\n\n"
-        f"🆔 ID: `{user.telegram_id}`\n"
-        f"👤 الاسم: {user.first_name or 'غير متوفر'}\n"
-        f"📛 يوزرنيم: @{user.username if user.username else 'لا يوجد'}\n"
-        f"📅 تاريخ الانضمام: {user.created_at}\n"
-    )
-
     await update.message.reply_text(
-        message,
+        f"""👤 **بيانات المستخدم**
+━━━━━━━━━━━━━━
+🆔 ID: `{user.telegram_id}`
+👤 الاسم: {user.first_name}
+📛 اليوزر: @{user.username or "لا يوجد"}
+📅 تاريخ التسجيل: {user.created_at}
+""",
         parse_mode="Markdown"
-    )
+                              )
