@@ -1,31 +1,39 @@
 import os
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from sqlalchemy import select
+from database import AsyncSessionLocal
+from models import User
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-APP_URL = os.getenv("APP_URL")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "🚀 فتح الويب",
-                web_app=WebAppInfo(url=APP_URL)
-            )
-        ]
-    ]
+    tg_user = update.effective_user
 
-    await update.message.reply_text(
-        "👋 أهلاً بك!\nاضغط على الزر لفتح الويب 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User).where(User.telegram_id == tg_user.id)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(
+                telegram_id=tg_user.id,
+                username=tg_user.username,
+                first_name=tg_user.first_name
+            )
+            session.add(user)
+            await session.commit()
+            msg = "🎉 تم تسجيلك لأول مرة بنجاح"
+        else:
+            msg = "👋 مرحبًا بعودتك"
+
+    await update.message.reply_text(msg)
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
-
-    print("✅ Bot is running...")
+    print("🤖 Bot is running")
     app.run_polling()
 
 if __name__ == "__main__":
