@@ -1,11 +1,12 @@
 import os
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from sqlalchemy import select
 from database import AsyncSessionLocal
 from models import User
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+APP_URL = os.getenv("APP_URL")  # 🔴 مهم جدًا
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user = update.effective_user
@@ -28,7 +29,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             msg = "👋 مرحبًا بعودتك"
 
-    await update.message.reply_text(msg)
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(
+                "🚀 فتح التطبيق",
+                web_app=WebAppInfo(url=APP_URL)
+            )
+        ]
+    ])
+
+    await update.message.reply_text(msg, reply_markup=keyboard)
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
