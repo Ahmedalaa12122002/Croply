@@ -30,9 +30,12 @@ async def startup():
 # Telegram verification
 # ======================
 def verify_telegram_init_data(init_data: str) -> dict:
-    data = dict(parse_qsl(init_data))
-    hash_received = data.pop("hash", None)
+    try:
+        data = dict(parse_qsl(init_data, strict_parsing=True))
+    except Exception:
+        raise HTTPException(status_code=403, detail="Bad init data")
 
+    hash_received = data.pop("hash", None)
     if not hash_received:
         raise HTTPException(status_code=403, detail="Missing hash")
 
@@ -71,14 +74,14 @@ async def home():
 <h2>⏳ جاري التحقق...</h2>
 
 <script>
-const tg = window.Telegram?.WebApp;
+const tg = window.Telegram && window.Telegram.WebApp;
 
 if (!tg || !tg.initData) {
-    document.body.innerHTML = "<h2>❌ Forbidden: Telegram access only</h2>";
+    document.body.innerHTML = "<h2>❌ Telegram only</h2>";
 } else {
-    fetch("/auth", {
+    fetch(window.location.origin + "/auth", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ init_data: tg.initData })
     })
     .then(res => {
