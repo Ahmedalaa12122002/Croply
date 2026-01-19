@@ -4,7 +4,6 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# لازم تكون asyncpg
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace(
         "postgresql://", "postgresql+asyncpg://", 1
@@ -21,7 +20,3 @@ AsyncSessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
-
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
