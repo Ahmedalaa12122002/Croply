@@ -10,4 +10,6 @@ class User(Base):
     username = Column(String(64))
     first_name = Column(String(64))
     is_active = Column(Boolean, default=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_login = Column(DateTime(timezone=True), onupdate=func.now())
