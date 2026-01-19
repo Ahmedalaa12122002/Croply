@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
+from database import engine, Base
 import hashlib
 import hmac
 import os
@@ -9,11 +10,12 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 app = FastAPI()
 
+
 # ======================
 # Telegram verification
 # ======================
 def verify_telegram_init_data(init_data: str) -> dict:
-    data = dict(parse_qsl(init_data))
+    data = dict(parse_qsl(init_data, strict_parsing=True))
     hash_received = data.pop("hash", None)
 
     if not hash_received:
@@ -37,20 +39,29 @@ def verify_telegram_init_data(init_data: str) -> dict:
 
 
 # ======================
-# الصفحة الرئيسية (لا حماية هنا)
+# Startup
+# ======================
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+# ======================
+# WebApp UI (مؤقت)
 # ======================
 @app.get("/", response_class=HTMLResponse)
 async def home():
     return """
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
 <title>Croply</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body style="text-align:center;font-family:Arial">
-<h3>⏳ Loading...</h3>
+<h2>⏳ جاري التحقق...</h2>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -60,14 +71,18 @@ if (!tg || !tg.initData) {
 } else {
     fetch("/auth", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ init_data: tg.initData })
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            init_data: tg.initData
+        })
     })
     .then(res => res.json())
     .then(data => {
         document.body.innerHTML = `
-            <h1>✅ Welcome ${data.first_name}</h1>
-            <p>ID: ${data.telegram_id}</p>
+        <h1>✅ مرحبًا ${data.first_name}</h1>
+        <p>ID: ${data.user_id}</p>
         `;
     })
     .catch(() => {
@@ -81,7 +96,7 @@ if (!tg || !tg.initData) {
 
 
 # ======================
-# الحماية هنا فقط
+# Auth endpoint
 # ======================
 @app.post("/auth")
 async def auth(request: Request):
@@ -92,11 +107,12 @@ async def auth(request: Request):
         raise HTTPException(status_code=403, detail="No init data")
 
     data = verify_telegram_init_data(init_data)
+
     user = eval(data.get("user", "{}"))
 
     return JSONResponse({
         "status": "ok",
-        "telegram_id": user.get("id"),
+        "user_id": user.get("id"),
         "first_name": user.get("first_name"),
         "username": user.get("username")
     })
