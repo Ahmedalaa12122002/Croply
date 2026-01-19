@@ -5,7 +5,7 @@ async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # إزالة الأزرار القديمة
+    # إزالة الأزرار
     await query.edit_message_reply_markup(reply_markup=None)
 
     if query.data == "latest_users":
@@ -14,6 +14,8 @@ async def admin_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data == "search_user":
+        # حفظ الحالة
+        context.user_data["state"] = "WAITING_ID"
         await query.edit_message_text(
-            "🔍 البحث عن مستخدم\n\n(سيتم تفعيل البحث لاحقًا)"
+            "🔍 ابعت ID المستخدم (أرقام فقط):"
         )
