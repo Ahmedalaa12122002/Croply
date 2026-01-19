@@ -1,13 +1,13 @@
-# admin_bot/models.py
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.sql import func
-from database import Base
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime
+from sqlalchemy.orm import declarative_base
 
-class AdminUser(Base):
-    __tablename__ = "admin_users"
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    telegram_id = Column(Integer, unique=True, index=True, nullable=False)
-    username = Column(String, nullable=True)
-    role = Column(String, nullable=False)  # owner | admin | moderator
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    telegram_id = Column(BigInteger)
+    username = Column(String)
+    first_name = Column(String)
+    created_at = Column(DateTime)
