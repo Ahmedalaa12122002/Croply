@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 import os
 import hashlib
 import hmac
+import json
 from urllib.parse import parse_qsl
 
 # ======================
@@ -67,7 +68,7 @@ if (!tg || !tg.initData) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            init_data: tg.initData   // ✅ مهم جدًا
+            init_data: tg.initData
         })
     })
     .then(res => res.json())
@@ -101,9 +102,16 @@ async def auth(request: Request):
 
     data = verify_telegram_init_data(init_data)
 
+    # ✅ هنا الحل
+    user_raw = data.get("user")
+    if not user_raw:
+        raise HTTPException(status_code=400, detail="User data missing")
+
+    user = json.loads(user_raw)
+
     return JSONResponse({
         "status": "ok",
-        "user_id": data.get("user[id]"),
-        "first_name": data.get("user[first_name]"),
-        "username": data.get("user[username]")
+        "user_id": user.get("id"),
+        "first_name": user.get("first_name"),
+        "username": user.get("username")
     })
