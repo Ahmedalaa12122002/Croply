@@ -8,6 +8,8 @@ from models import User
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 APP_URL = os.getenv("APP_URL")
 
+ADMIN_IDS = [5102387551]  # ← حط ID بتاعك هنا
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user = update.effective_user
 
