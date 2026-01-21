@@ -4,9 +4,6 @@ import os
 import hashlib
 import hmac
 from urllib.parse import parse_qsl
-import json
-
-app = FastAPI()
 
 # ======================
 # ENV
@@ -15,13 +12,12 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN is missing")
 
+app = FastAPI()
+
 # ======================
 # Telegram verification
 # ======================
 def verify_telegram_init_data(init_data: str) -> dict:
-    if not isinstance(init_data, str):
-        raise HTTPException(status_code=403, detail="Invalid init data type")
-
     data = dict(parse_qsl(init_data))
     hash_received = data.pop("hash", None)
 
@@ -33,33 +29,33 @@ def verify_telegram_init_data(init_data: str) -> dict:
     )
 
     secret_key = hashlib.sha256(BOT_TOKEN.encode()).digest()
-    calculated_hash = hmac.new(
+    hash_calculated = hmac.new(
         secret_key,
         data_check_string.encode(),
         hashlib.sha256
     ).hexdigest()
 
-    if calculated_hash != hash_received:
+    if hash_calculated != hash_received:
         raise HTTPException(status_code=403, detail="Invalid Telegram signature")
 
     return data
 
 # ======================
-# Home (Telegram only)
+# Home (Telegram WebApp only)
 # ======================
 @app.get("/", response_class=HTMLResponse)
 async def home():
     return """
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
 <title>Croply</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body style="font-family:Arial;text-align:center">
+<body style="text-align:center;font-family:Arial">
 
-<h3>⏳ جاري التحقق...</h3>
+<h2>⏳ جاري التحقق...</h2>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -69,15 +65,15 @@ if (!tg || !tg.initData) {
 } else {
     fetch("/auth", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            init_data: tg.initData   // ✅ STRING
+            init_data: tg.initData   // ✅ مهم جدًا
         })
     })
     .then(res => res.json())
     .then(data => {
         document.body.innerHTML = `
-            <h2>✅ مرحبًا ${data.first_name}</h2>
+            <h1>✅ مرحبًا ${data.first_name}</h1>
             <p>ID: ${data.user_id}</p>
             <p>@${data.username || "لا يوجد"}</p>
         `;
