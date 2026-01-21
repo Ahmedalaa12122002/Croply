@@ -104,11 +104,10 @@ async def auth(request: Request):
         raise HTTPException(status_code=403, detail="No init data")
 
     data = verify_telegram_init_data(init_data)
-    user = json.loads(data.get("user", "{}"))
 
     return JSONResponse({
         "status": "ok",
-        "user_id": user.get("id"),
-        "first_name": user.get("first_name"),
-        "username": user.get("username")
+        "user_id": data.get("user[id]"),
+        "first_name": data.get("user[first_name]"),
+        "username": data.get("user[username]")
     })
