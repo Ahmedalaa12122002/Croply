@@ -25,10 +25,10 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
 
 # ======================
-# Telegram verification
+# Telegram verification (CORRECT)
 # ======================
 def verify_telegram_init_data(init_data: str) -> dict:
-    data = dict(parse_qsl(init_data))
+    data = dict(parse_qsl(init_data, strict_parsing=True))
     hash_received = data.pop("hash", None)
 
     if not hash_received:
@@ -68,18 +68,17 @@ async def home():
 <h2>⏳ جاري التحقق...</h2>
 
 <script>
-const tg = window.Telegram?.WebApp;
+const tg = window.Telegram.WebApp;
 
-if (!tg || !tg.initDataUnsafe) {
+// لازم يكون WebApp مفتوح من Telegram
+if (!tg || !tg.initData) {
     document.body.innerHTML = "<h2>❌ Telegram access only</h2>";
 } else {
     fetch("/auth", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            init_data: tg.initDataUnsafe
+            init_data: tg.initData   // ✅ الصحيح
         })
     })
     .then(res => {
