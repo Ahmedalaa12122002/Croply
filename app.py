@@ -51,7 +51,7 @@ def verify_telegram_init_data(init_data: str) -> dict:
     return data
 
 # ======================
-# Home (Telegram only)
+# Home (Telegram WebApp only)
 # ======================
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -70,7 +70,7 @@ async def home():
 <script>
 const tg = window.Telegram?.WebApp;
 
-if (!tg || !tg.initData) {
+if (!tg || !tg.initDataUnsafe) {
     document.body.innerHTML = "<h2>❌ Telegram access only</h2>";
 } else {
     fetch("/auth", {
@@ -79,7 +79,7 @@ if (!tg || !tg.initData) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            init_data: tg.initData
+            init_data: tg.initDataUnsafe
         })
     })
     .then(res => {
