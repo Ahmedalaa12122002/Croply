@@ -1,19 +1,30 @@
-from handlers.stats import (
-    stats_entry, global_stats,
-    handle_global_stats_period,
-    user_stats_request, handle_user_stats_input
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler,
+    CallbackQueryHandler, MessageHandler, filters
 )
-from handlers.admin_activity import (
-    admin_activity_entry, handle_admin_logs_period
+from config import BOT_TOKEN
+from handlers.start import start
+from handlers.users import (
+    users_entry, ask_user_id, handle_user_id,
+    confirm_action, cancel_action
 )
 
-# إحصائيات
-app.add_handler(CallbackQueryHandler(stats_entry, pattern="stats"))
-app.add_handler(CallbackQueryHandler(global_stats, pattern="stats_global"))
-app.add_handler(CallbackQueryHandler(handle_global_stats_period, pattern="global_stats:"))
-app.add_handler(CallbackQueryHandler(user_stats_request, pattern="stats_user"))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_stats_input))
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# سجل الأدمن
-app.add_handler(CallbackQueryHandler(admin_activity_entry, pattern="admin_activity"))
-app.add_handler(CallbackQueryHandler(handle_admin_logs_period, pattern="admin_logs:"))
+    app.add_handler(CommandHandler("start", start))
+
+    # إدارة المستخدمين
+    app.add_handler(CallbackQueryHandler(users_entry, pattern="users"))
+    app.add_handler(CallbackQueryHandler(lambda u,c: ask_user_id(u,c,"lookup"), pattern="user_lookup"))
+    app.add_handler(CallbackQueryHandler(lambda u,c: ask_user_id(u,c,"reset"), pattern="user_reset"))
+    app.add_handler(CallbackQueryHandler(lambda u,c: ask_user_id(u,c,"delete"), pattern="user_delete"))
+    app.add_handler(CallbackQueryHandler(confirm_action, pattern="^confirm:"))
+    app.add_handler(CallbackQueryHandler(cancel_action, pattern="cancel"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_id))
+
+    print("✅ Admin Bot Running Securely")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
