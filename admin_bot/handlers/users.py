@@ -4,7 +4,6 @@ from security import check_access
 from permissions import Role
 from keyboards.users_menu import users_menu, confirm_menu
 
-# حالة انتظار إدخال ID
 USER_STATES = {}
 
 async def users_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -15,76 +14,43 @@ async def users_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def ask_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE, action: str):
-    user_id = update.effective_user.id
-    if not check_access(user_id, Role.GOLD if action != "lookup" else Role.BRONZE):
+    admin_id = update.effective_user.id
+    role = Role.GOLD if action != "lookup" else Role.BRONZE
+
+    if not check_access(admin_id, role):
         await update.callback_query.answer("❌ ليس لديك صلاحية", show_alert=True)
         return
 
-    USER_STATES[user_id] = action
+    USER_STATES[admin_id] = action
     await update.callback_query.answer()
-    await update.callback_query.message.reply_text("✍️ من فضلك اكتب Telegram ID للمستخدم:")
+    await update.callback_query.message.reply_text("✍️ اكتب Telegram ID للمستخدم:")
 
 async def handle_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     admin_id = update.effective_user.id
-    state = USER_STATES.get(admin_id)
-    if not state:
+    action = USER_STATES.pop(admin_id, None)
+    if not action:
         return
 
-    text = update.message.text.strip()
-    if not text.isdigit():
-        await update.message.reply_text("❌ ID غير صحيح، أرسل أرقام فقط.")
+    if not update.message.text.isdigit():
+        await update.message.reply_text("❌ ID غير صحيح")
         return
 
-    target_id = int(text)
-    USER_STATES.pop(admin_id, None)
+    target_id = int(update.message.text)
 
-    # 👇 هنا سنربط DB لاحقًا – الآن رسالة توضيحية
-    if state == "lookup":
+    if action == "lookup":
         await update.message.reply_text(
-            f"""📄 كشف حساب المستخدم
-🆔 ID: {target_id}
-📅 تاريخ التسجيل: —
-🕒 آخر دخول: —
-💰 النقاط: —
-📌 الحالة: نشط
-"""
+            f"📄 كشف حساب المستخدم\n🆔 ID: {target_id}\n💰 النقاط: —\n📌 الحالة: نشط"
         )
-
-    elif state == "reset":
+    else:
         await update.message.reply_text(
-            f"⚠️ هل أنت متأكد من تصفير حساب المستخدم {target_id}؟",
-            reply_markup=confirm_menu("reset", target_id)
-        )
-
-    elif state == "delete":
-        await update.message.reply_text(
-            f"🚨 تحذير نهائي!\nسيتم حذف المستخدم {target_id} نهائيًا.",
-            reply_markup=confirm_menu("delete", target_id)
+            f"⚠️ تأكيد العملية على المستخدم {target_id}",
+            reply_markup=confirm_menu(action, target_id)
         )
 
 async def confirm_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    admin_id = update.effective_user.id
-    data = update.callback_query.data.split(":")
-    action, target_id = data[1], int(data[2])
-
-    required_role = Role.PLATINUM if action == "delete" else Role.GOLD
-    if not check_access(admin_id, required_role):
-        await update.callback_query.answer("❌ ليس لديك صلاحية", show_alert=True)
-        return
-
     await update.callback_query.answer()
-
-    if action == "reset":
-        await update.callback_query.message.reply_text(
-            f"✅ تم تصفير حساب المستخدم {target_id} بنجاح"
-        )
-    elif action == "delete":
-        await update.callback_query.message.reply_text(
-            f"🗑️ تم حذف المستخدم {target_id} نهائيًا"
-        )
-
-    # 📌 لاحقًا: تسجيل العملية في Admin Logs
+    await update.callback_query.message.reply_text("✅ تم تنفيذ العملية")
 
 async def cancel_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
-    await update.callback_query.message.reply_text("❌ تم إلغاء العملية.")
+    await update.callback_query.message.reply_text("❌ تم الإلغاء")
