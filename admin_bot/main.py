@@ -1,28 +1,22 @@
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-from config import BOT_TOKEN
-from handlers.start import start
-from handlers.users import (
-    users_entry, ask_user_id, handle_user_id,
-    confirm_action, cancel_action
-)
+from handlers.points import points_entry, ask_points_input, handle_points_input, confirm_points_action
+from handlers.finance import finance_entry, list_withdraw_requests, handle_finance_decision
+from handlers.ads import ads_entry, list_pending_ads, handle_ads_decision
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+# نقاط
+app.add_handler(CallbackQueryHandler(points_entry, pattern="points"))
+app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"add"), pattern="points_add"))
+app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"deduct"), pattern="points_deduct"))
+app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"add_all"), pattern="points_add_all"))
+app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"deduct_all"), pattern="points_deduct_all"))
+app.add_handler(CallbackQueryHandler(confirm_points_action, pattern="^confirm_points:"))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_points_input))
 
-    app.add_handler(CommandHandler("start", start))
+# سحب/إيداع
+app.add_handler(CallbackQueryHandler(finance_entry, pattern="finance"))
+app.add_handler(CallbackQueryHandler(list_withdraw_requests, pattern="withdraw_requests"))
+app.add_handler(CallbackQueryHandler(handle_finance_decision, pattern="^(withdraw_|deposit_)"))
 
-    # إدارة المستخدمين
-    app.add_handler(CallbackQueryHandler(users_entry, pattern="users"))
-    app.add_handler(CallbackQueryHandler(lambda u, c: ask_user_id(u, c, "lookup"), pattern="user_lookup"))
-    app.add_handler(CallbackQueryHandler(lambda u, c: ask_user_id(u, c, "reset"), pattern="user_reset"))
-    app.add_handler(CallbackQueryHandler(lambda u, c: ask_user_id(u, c, "delete"), pattern="user_delete"))
-
-    app.add_handler(CallbackQueryHandler(confirm_action, pattern="^confirm:"))
-    app.add_handler(CallbackQueryHandler(cancel_action, pattern="cancel"))
-
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_id))
-
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# إعلانات
+app.add_handler(CallbackQueryHandler(ads_entry, pattern="ads"))
+app.add_handler(CallbackQueryHandler(list_pending_ads, pattern="ads_pending"))
+app.add_handler(CallbackQueryHandler(handle_ads_decision, pattern="^ads_"))
