@@ -7,8 +7,7 @@ def main_menu(user_id: int):
         [InlineKeyboardButton("💰 النقاط / العملات", callback_data="points")],
         [InlineKeyboardButton("📢 الإعلانات / المهام", callback_data="ads")],
         [InlineKeyboardButton("🏦 السحب والإيداع", callback_data="finance")],
-        [InlineKeyboardButton("📊 الإحصائيات", callback_data="stats")],
-        [InlineKeyboardButton("⚙️ الإعدادات", callback_data="settings")]
+        [InlineKeyboardButton("📊 الإحصائيات", callback_data="stats")]
     ]
 
     if user_id == OWNER_ID:
