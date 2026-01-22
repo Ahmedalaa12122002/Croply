@@ -1,13 +1,17 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+# handlers/start.py
+from telegram import Update
 from telegram.ext import ContextTypes
+from security import is_admin
+from keyboards.main_menu import main_menu
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
-        [InlineKeyboardButton("🆕 أحدث المستخدمين", callback_data="latest_users")],
-        [InlineKeyboardButton("🔍 البحث عن مستخدم", callback_data="search_user")]
-    ]
+    user_id = update.effective_user.id
+
+    if not is_admin(user_id):
+        await update.message.reply_text("❌ هذا بوت أدمن خاص")
+        return
 
     await update.message.reply_text(
-        "👑 لوحة تحكم الأدمن\nاختر من القائمة:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        "👑 مرحبًا بك في لوحة تحكم الأدمن",
+        reply_markup=main_menu(user_id)
     )
