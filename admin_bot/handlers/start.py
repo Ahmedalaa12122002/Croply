@@ -5,6 +5,7 @@ from keyboards.main_menu import main_menu
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+
     if not is_admin(user_id):
         await update.message.reply_text("❌ هذا بوت أدمن خاص")
         return
