@@ -1,4 +1,3 @@
-# permissions.py
 from enum import Enum
 
 class Role(Enum):
@@ -10,7 +9,7 @@ class Role(Enum):
 
 # مؤقتًا في الذاكرة (لاحقًا DB)
 ADMINS = {
-    5102387551: Role.OWNER  # المالك الأساسي
+    5102387551: Role.OWNER
 }
 
 def get_admin_role(user_id: int):
