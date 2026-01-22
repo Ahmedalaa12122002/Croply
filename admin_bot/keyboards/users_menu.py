@@ -8,10 +8,10 @@ def users_menu():
         [InlineKeyboardButton("⬅️ رجوع", callback_data="back_main")]
     ])
 
-def confirm_menu(action: str, user_id: int):
+def confirm_menu(action: str, target_id: int):
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✔️ تأكيد", callback_data=f"confirm:{action}:{user_id}"),
+            InlineKeyboardButton("✔️ تأكيد", callback_data=f"confirm:{action}:{target_id}"),
             InlineKeyboardButton("❌ إلغاء", callback_data="cancel")
         ]
     ])
