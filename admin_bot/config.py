@@ -1,4 +1,6 @@
-BOT_TOKEN = "PUT_ADMIN_BOT_TOKEN_HERE"
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 OWNER_ID = 5102387551
 
