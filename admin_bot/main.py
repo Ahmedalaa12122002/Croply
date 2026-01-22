@@ -1,22 +1,19 @@
-from handlers.points import points_entry, ask_points_input, handle_points_input, confirm_points_action
-from handlers.finance import finance_entry, list_withdraw_requests, handle_finance_decision
-from handlers.ads import ads_entry, list_pending_ads, handle_ads_decision
+from handlers.stats import (
+    stats_entry, global_stats,
+    handle_global_stats_period,
+    user_stats_request, handle_user_stats_input
+)
+from handlers.admin_activity import (
+    admin_activity_entry, handle_admin_logs_period
+)
 
-# نقاط
-app.add_handler(CallbackQueryHandler(points_entry, pattern="points"))
-app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"add"), pattern="points_add"))
-app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"deduct"), pattern="points_deduct"))
-app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"add_all"), pattern="points_add_all"))
-app.add_handler(CallbackQueryHandler(lambda u,c: ask_points_input(u,c,"deduct_all"), pattern="points_deduct_all"))
-app.add_handler(CallbackQueryHandler(confirm_points_action, pattern="^confirm_points:"))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_points_input))
+# إحصائيات
+app.add_handler(CallbackQueryHandler(stats_entry, pattern="stats"))
+app.add_handler(CallbackQueryHandler(global_stats, pattern="stats_global"))
+app.add_handler(CallbackQueryHandler(handle_global_stats_period, pattern="global_stats:"))
+app.add_handler(CallbackQueryHandler(user_stats_request, pattern="stats_user"))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_user_stats_input))
 
-# سحب/إيداع
-app.add_handler(CallbackQueryHandler(finance_entry, pattern="finance"))
-app.add_handler(CallbackQueryHandler(list_withdraw_requests, pattern="withdraw_requests"))
-app.add_handler(CallbackQueryHandler(handle_finance_decision, pattern="^(withdraw_|deposit_)"))
-
-# إعلانات
-app.add_handler(CallbackQueryHandler(ads_entry, pattern="ads"))
-app.add_handler(CallbackQueryHandler(list_pending_ads, pattern="ads_pending"))
-app.add_handler(CallbackQueryHandler(handle_ads_decision, pattern="^ads_"))
+# سجل الأدمن
+app.add_handler(CallbackQueryHandler(admin_activity_entry, pattern="admin_activity"))
+app.add_handler(CallbackQueryHandler(handle_admin_logs_period, pattern="admin_logs:"))
