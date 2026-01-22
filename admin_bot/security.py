@@ -1,4 +1,3 @@
-# security.py
 from config import OWNER_ID, EMERGENCY_LOCK
 from permissions import get_admin_role, Role
 
