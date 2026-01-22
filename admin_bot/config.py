@@ -1,10 +1,22 @@
-# admin_bot/config.py
-import os
+# security.py
+from config import OWNER_ID, EMERGENCY_LOCK
+from permissions import get_admin_role, Role
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-DATABASE_URL = os.getenv("DATABASE_URL")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
+def is_owner(user_id: int) -> bool:
+    return user_id == OWNER_ID
 
-ROLE_OWNER = "owner"
-ROLE_ADMIN = "admin"
-ROLE_MODERATOR = "moderator"
+def is_admin(user_id: int) -> bool:
+    return get_admin_role(user_id) is not None
+
+def check_access(user_id: int, required_role: Role) -> bool:
+    if is_owner(user_id):
+        return True
+
+    if EMERGENCY_LOCK:
+        return False
+
+    role = get_admin_role(user_id)
+    if not role:
+        return False
+
+    return role.value >= required_role.value
