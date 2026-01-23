@@ -12,12 +12,12 @@ def main_menu():
         [InlineKeyboardButton("⚙️ صلاحيات الأدمن", callback_data="menu_permissions")]
     ])
 
-# ===== إدارة المستخدمين =====
+# ===== إدارة المستخدمين ====
 def users_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🔍 كشف حساب مستخدم", callback_data="user_check")],
-        [InlineKeyboardButton("🧹 تصفير بيانات مستخدم", callback_data="noop")],
-        [InlineKeyboardButton("❌ حذف مستخدم نهائيًا", callback_data="noop")],
+        [InlineKeyboardButton("🧹 تصفير بيانات مستخدم", callback_data="user_reset")],
+        [InlineKeyboardButton("❌ حذف مستخدم نهائيًا", callback_data="user_delete")],
         [InlineKeyboardButton("⬅️ رجوع", callback_data="back_main")]
     ])
 
