@@ -6,14 +6,24 @@ from keyboards import (
     ads_menu, finance_menu, stats_menu,
     admin_menu, permissions_menu
 )
+from api_client import (
+    api_get_user,
+    api_reset_user,
+    api_delete_user
+)
 
-# ===== حالات الإدخال =====
+# ======================
+# States
+# ======================
 USER_STATES = {}
 WAITING_USER_ID = "WAITING_USER_ID"
 WAITING_RESET_ID = "WAITING_RESET_ID"
 WAITING_DELETE_ID = "WAITING_DELETE_ID"
 
-# ===== /start =====
+
+# ======================
+# /start
+# ======================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         await update.message.reply_text("❌ هذا بوت أدمن خاص")
@@ -24,19 +34,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=main_menu()
     )
 
-# ===== التعامل مع الأزرار =====
+
+# ======================
+# Buttons Handler
+# ======================
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    if query.from_user.id != OWNER_ID:
+    admin_id = query.from_user.id
+
+    if admin_id != OWNER_ID:
         await query.edit_message_text("❌ غير مصرح")
         return
 
     data = query.data
-    admin_id = query.from_user.id
 
-    # ---- القوائم ----
+    # ===== Main Menus =====
     if data == "menu_users":
         await query.edit_message_text("👤 إدارة المستخدمين", reply_markup=users_menu())
 
@@ -62,14 +76,14 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         USER_STATES.pop(admin_id, None)
         await query.edit_message_text("👑 لوحة تحكم الأدمن", reply_markup=main_menu())
 
-    # ---- إدارة المستخدمين ----
+    # ===== User Management =====
     elif data == "user_check":
         USER_STATES[admin_id] = WAITING_USER_ID
         await query.edit_message_text("✍️ اكتب Telegram ID للمستخدم:")
 
     elif data == "user_reset":
         USER_STATES[admin_id] = WAITING_RESET_ID
-        await query.edit_message_text("⚠️ اكتب Telegram ID لتصفير بياناته:")
+        await query.edit_message_text("⚠️ اكتب Telegram ID لتصفير نقاطه:")
 
     elif data == "user_delete":
         USER_STATES[admin_id] = WAITING_DELETE_ID
@@ -78,7 +92,10 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.answer("🚧 هذه الميزة ستُفعل لاحقًا", show_alert=True)
 
-# ===== استقبال النص =====
+
+# ======================
+# Text Handler (ID input)
+# ======================
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     admin_id = update.effective_user.id
     state = USER_STATES.get(admin_id)
@@ -92,35 +109,53 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ من فضلك اكتب Telegram ID صحيح (أرقام فقط)")
         return
 
-    USER_STATES.pop(admin_id)
     telegram_id = int(text)
+    USER_STATES.pop(admin_id, None)
 
-    # ---- كشف حساب (Mock) ----
+    # ===== 1️⃣ كشف حساب =====
     if state == WAITING_USER_ID:
+        data = api_get_user(telegram_id)
+
+        if not data.get("exists"):
+            await update.message.reply_text("❌ المستخدم غير موجود")
+            return
+
+        if data.get("is_deleted"):
+            status = "❌ محذوف"
+        elif data.get("is_active"):
+            status = "🟢 نشط"
+        else:
+            status = "🟡 لم يدخل الويب"
+
         await update.message.reply_text(
-            f"""👤 بيانات المستخدم (تجريبية)
-🆔 ID: {telegram_id}
-👤 الاسم: Test User
-📛 يوزرنيم: @testuser
-🟡 الحالة: لم يدخل الويب
-💰 النقاط: 0
+            f"""👤 بيانات المستخدم
+🆔 ID: {data.get("telegram_id")}
+👤 الاسم: {data.get("first_name") or "—"}
+📛 يوزرنيم: @{data.get("username") or "—"}
+💰 النقاط: {data.get("points")}
+📌 الحالة: {status}
+🕒 آخر دخول ويب: {data.get("last_web_login") or "—"}
 """
         )
 
-    # ---- تصفير بيانات (Mock) ----
+    # ===== 2️⃣ تصفير نقاط =====
     elif state == WAITING_RESET_ID:
+        api_reset_user(telegram_id)
+
         await update.message.reply_text(
-            f"""🧹 تم تصفير بيانات المستخدم (تجريبيًا)
+            f"""🧹 تم تصفير نقاط المستخدم بنجاح
 🆔 ID: {telegram_id}
 """
         )
 
-    # ---- حذف مستخدم (Mock) ----
+    # ===== 3️⃣ حذف مستخدم (Soft Delete) =====
     elif state == WAITING_DELETE_ID:
+        api_delete_user(telegram_id)
+
         await update.message.reply_text(
-            f"""❌ تم حذف المستخدم نهائيًا (تجريبيًا)
+            f"""❌ تم حذف المستخدم نهائيًا (Soft Delete)
 🆔 ID: {telegram_id}
 
-⚠️ عند ربط DB سيتم الحذف الحقيقي
+ℹ️ المستخدم لن يظهر كنشط مرة أخرى
 """
-        )
+                                     )
