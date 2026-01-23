@@ -1,2 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy
+asyncpg
 python-telegram-bot==20.7
 requests
