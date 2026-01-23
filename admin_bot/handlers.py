@@ -7,6 +7,11 @@ from keyboards import (
     admin_menu, permissions_menu
 )
 
+# ===== حالات الإدخال =====
+USER_STATES = {}
+WAITING_USER_ID = "WAITING_USER_ID"
+
+# ===== /start =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         await update.message.reply_text("❌ هذا بوت أدمن خاص")
@@ -17,6 +22,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=main_menu()
     )
 
+# ===== التعامل مع الأزرار =====
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -27,6 +33,7 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = query.data
 
+    # القوائم
     if data == "menu_users":
         await query.edit_message_text("👤 إدارة المستخدمين", reply_markup=users_menu())
 
@@ -49,7 +56,42 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("⚙️ صلاحيات الأدمن", reply_markup=permissions_menu())
 
     elif data == "back_main":
+        USER_STATES.pop(query.from_user.id, None)
         await query.edit_message_text("👑 لوحة تحكم الأدمن", reply_markup=main_menu())
 
-    else:
+    # ===== إدارة المستخدمين =====
+    elif data == "noop":
         await query.answer("🚧 هذه الميزة ستُفعل لاحقًا", show_alert=True)
+
+    elif data == "user_check":
+        USER_STATES[query.from_user.id] = WAITING_USER_ID
+        await query.edit_message_text("✍️ اكتب Telegram ID للمستخدم:")
+
+# ===== استقبال النص =====
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    admin_id = update.effective_user.id
+
+    if USER_STATES.get(admin_id) != WAITING_USER_ID:
+        return
+
+    USER_STATES.pop(admin_id)
+
+    text = update.message.text.strip()
+
+    if not text.isdigit():
+        await update.message.reply_text("❌ من فضلك اكتب Telegram ID صحيح (أرقام فقط)")
+        return
+
+    telegram_id = int(text)
+
+    # ===== بيانات تجريبية (Mock) =====
+    await update.message.reply_text(
+        f"""👤 بيانات المستخدم (تجريبية)
+🆔 ID: {telegram_id}
+👤 الاسم: Test User
+📛 يوزرنيم: @testuser
+🟡 الحالة: لم يدخل الويب
+💰 النقاط: 0
+🕒 آخر دخول: —
+"""
+                                     )
