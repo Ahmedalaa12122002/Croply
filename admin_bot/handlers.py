@@ -10,6 +10,8 @@ from keyboards import (
 # ===== حالات الإدخال =====
 USER_STATES = {}
 WAITING_USER_ID = "WAITING_USER_ID"
+WAITING_RESET_ID = "WAITING_RESET_ID"
+WAITING_DELETE_ID = "WAITING_DELETE_ID"
 
 # ===== /start =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,8 +34,9 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     data = query.data
+    admin_id = query.from_user.id
 
-    # القوائم
+    # ---- القوائم ----
     if data == "menu_users":
         await query.edit_message_text("👤 إدارة المستخدمين", reply_markup=users_menu())
 
@@ -56,25 +59,32 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("⚙️ صلاحيات الأدمن", reply_markup=permissions_menu())
 
     elif data == "back_main":
-        USER_STATES.pop(query.from_user.id, None)
+        USER_STATES.pop(admin_id, None)
         await query.edit_message_text("👑 لوحة تحكم الأدمن", reply_markup=main_menu())
 
-    # ===== إدارة المستخدمين =====
-    elif data == "noop":
-        await query.answer("🚧 هذه الميزة ستُفعل لاحقًا", show_alert=True)
-
+    # ---- إدارة المستخدمين ----
     elif data == "user_check":
-        USER_STATES[query.from_user.id] = WAITING_USER_ID
+        USER_STATES[admin_id] = WAITING_USER_ID
         await query.edit_message_text("✍️ اكتب Telegram ID للمستخدم:")
+
+    elif data == "user_reset":
+        USER_STATES[admin_id] = WAITING_RESET_ID
+        await query.edit_message_text("⚠️ اكتب Telegram ID لتصفير بياناته:")
+
+    elif data == "user_delete":
+        USER_STATES[admin_id] = WAITING_DELETE_ID
+        await query.edit_message_text("❗ اكتب Telegram ID لحذف المستخدم نهائيًا:")
+
+    else:
+        await query.answer("🚧 هذه الميزة ستُفعل لاحقًا", show_alert=True)
 
 # ===== استقبال النص =====
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     admin_id = update.effective_user.id
+    state = USER_STATES.get(admin_id)
 
-    if USER_STATES.get(admin_id) != WAITING_USER_ID:
+    if not state:
         return
-
-    USER_STATES.pop(admin_id)
 
     text = update.message.text.strip()
 
@@ -82,16 +92,35 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ من فضلك اكتب Telegram ID صحيح (أرقام فقط)")
         return
 
+    USER_STATES.pop(admin_id)
     telegram_id = int(text)
 
-    # ===== بيانات تجريبية (Mock) =====
-    await update.message.reply_text(
-        f"""👤 بيانات المستخدم (تجريبية)
+    # ---- كشف حساب (Mock) ----
+    if state == WAITING_USER_ID:
+        await update.message.reply_text(
+            f"""👤 بيانات المستخدم (تجريبية)
 🆔 ID: {telegram_id}
 👤 الاسم: Test User
 📛 يوزرنيم: @testuser
 🟡 الحالة: لم يدخل الويب
 💰 النقاط: 0
-🕒 آخر دخول: —
 """
-                                     )
+        )
+
+    # ---- تصفير بيانات (Mock) ----
+    elif state == WAITING_RESET_ID:
+        await update.message.reply_text(
+            f"""🧹 تم تصفير بيانات المستخدم (تجريبيًا)
+🆔 ID: {telegram_id}
+"""
+        )
+
+    # ---- حذف مستخدم (Mock) ----
+    elif state == WAITING_DELETE_ID:
+        await update.message.reply_text(
+            f"""❌ تم حذف المستخدم نهائيًا (تجريبيًا)
+🆔 ID: {telegram_id}
+
+⚠️ عند ربط DB سيتم الحذف الحقيقي
+"""
+        )
